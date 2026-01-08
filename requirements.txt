@@ -1,0 +1,4 @@
+botasaurus
+requests
+PyYAML
+python-dotenv

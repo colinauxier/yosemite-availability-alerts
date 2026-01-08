@@ -1,0 +1,15 @@
+services:
+  reservations-scraper:
+    build: .
+    environment:
+      - RESERVATION_START_DATE=${RESERVATION_START_DATE}
+      - RESERVATION_END_DATE=${RESERVATION_END_DATE}
+      - EMAIL_TO=${EMAIL_TO}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-0} # 0 = run once
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
