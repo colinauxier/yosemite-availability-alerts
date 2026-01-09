@@ -103,7 +103,7 @@ def scrape_heading_task(request: Request, data):
     params = {
         "callback": "$.wxa.on_datepicker_general_availability_loaded",
         "CresPropCode": "000000",
-        "MultiPropCode": "Y",
+        "MultiPropCode": os.environ.get("HOTEL", "Y"),
         "UnitTypeCode": "",
         "StartDate": start_date_str,
         "EndDate": end_date_str,

@@ -1,0 +1,7 @@
+.devcontainer/devcontainer.json
+.github/dependabot.yml
+logs/alert_result.json
+logs/output.json
+logs/raw_response.txt
+logs/scraper.log
+.env
