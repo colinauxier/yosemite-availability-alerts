@@ -323,6 +323,29 @@ def check_and_alert(result):
         d += timedelta(days=1)
     body = "\n".join(body_lines)
 
+    # Create counts only for the reservation window
+    window_counts = {}
+    d = start
+    while d <= end:
+        iso = d.isoformat()
+        window_counts[iso] = counts.get(iso, 0)
+        d += timedelta(days=1)
+
+    # Load previous counts to check for changes
+    previous_path = Path(LOG_DIR) / "previous_counts.json"
+    try:
+        with open(previous_path, 'r', encoding='utf-8') as f:
+            previous_counts = json.load(f)
+    except FileNotFoundError:
+        previous_counts = None
+    except Exception as e:
+        logger.warning("Failed to load previous counts: %s", e)
+        previous_counts = None
+
+    if previous_counts == window_counts:
+        logger.info("Available counts unchanged since last check, skipping email")
+        return {"status": "unchanged", "count": total_checked}
+
     smtp_host = os.environ.get("SMTP_HOST")
     smtp_port = int(os.environ.get("SMTP_PORT", 587))
     smtp_user = os.environ.get("SMTP_USER")
@@ -344,6 +367,13 @@ def check_and_alert(result):
                 use_starttls=(smtp_port != 465),
             )
             logger.info("Alert email sent to %s", email_to)
+            # Save current window counts as previous
+            try:
+                with open(previous_path, 'w', encoding='utf-8') as f:
+                    json.dump(window_counts, f, ensure_ascii=False, indent=2)
+                logger.debug("Saved previous counts")
+            except Exception as e:
+                logger.warning("Failed to save previous counts: %s", e)
             return {"status": "alert_sent", "count": total_checked}
         except Exception as exc:
             logger.exception("Failed to send alert email: %s", exc)
@@ -351,6 +381,13 @@ def check_and_alert(result):
     else:
         logger.info("SMTP not configured; logging availability body")
         logger.info("%s", body)
+        # Save current window counts even without SMTP
+        try:
+            with open(previous_path, 'w', encoding='utf-8') as f:
+                json.dump(window_counts, f, ensure_ascii=False, indent=2)
+            logger.debug("Saved previous counts")
+        except Exception as e:
+            logger.warning("Failed to save previous counts: %s", e)
         return {"status": "found_but_no_smtp", "count": total_checked, "details": "logged"}
 
 def fetch_with_retries(data, max_attempts=3, delay_seconds=5):
