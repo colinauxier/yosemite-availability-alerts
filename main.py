@@ -310,8 +310,8 @@ def check_and_alert(result):
         return {"status": "no_inventory_for_dates", "missing_dates_count": len(missing_dates), "missing_examples": missing_dates[:10]}
 
     if non_positive:
-        logger.debug("Not all dates positive; non-positive date(s): %s", non_positive[:10])
-        return {"Not all dates positive; non-positive date(s): %s", non_positive[:10]}
+        logger.info("Availability found but not all dates positive; non-positive date(s): %s", non_positive[:10])
+        return {"status": "not_all_positive", "non_positive_dates": non_positive[:10]}
 
     # All dates present and > 0
     logger.info("All %d dates in window have AvailableCount > 0", total_checked)
@@ -377,8 +377,10 @@ def fetch_with_retries(data, max_attempts=3, delay_seconds=5):
         last_alert = check_and_alert(last_result)
         logger.debug("Attempt %d check result: %s", attempt, last_alert)
 
-        if last_alert.get("status") != "no_payload":
-            # success or other terminal status
+        alert_status = last_alert.get("status")
+        if alert_status != "no_payload":
+            # terminal status (success, error, or no inventory) - stop retrying
+            logger.info("Terminal status '%s' received; stopping retry loop", alert_status)
             break
 
         # if we have more attempts, sleep then retry
